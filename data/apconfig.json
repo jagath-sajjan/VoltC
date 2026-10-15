@@ -1,0 +1,21 @@
+{
+  "rates": {
+    "tariff_inr_per_kwh": 7.98,
+    "emission_kg_co2_per_kwh": 0.71,
+    "bescom_breakdown_notes": {
+      "base_charge": 5.80,
+      "true_up_charge": 0.56,
+      "pg_surcharge": 0.35,
+      "effective_average": 7.98
+    }
+  },
+  "appliances_watts": {
+    "tube_light": 36,
+    "fan": 75,
+    "ac_1_5_ton": 1500,
+    "desktop_computer": 250,
+    "server_rack": 850,
+    "projector": 300,
+    "hall_lighting_array": 400
+  }
+}
