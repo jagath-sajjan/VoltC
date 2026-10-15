@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from google import genai
+from groq import Groq
 
 load_dotenv()
 
@@ -25,12 +26,54 @@ def generate_action_plan(state_data: dict) -> str:
     Keep it punchy, professional, and strictly under 100 words.
     """
     
-    try:
-        client = genai.Client()
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=prompt
-        )
-        return response.text
-    except Exception as e:
-        return f"**API Error:** Make sure `GEMINI_API_KEY` is set in your `.env` file.\n\nDetails: {str(e)}"
+    key = os.getenv("GEMINI_API_KEY")
+    response_text = None
+    last_gemini_error = None
+    
+    if key:
+        try:
+            client = genai.Client(api_key=key)
+            models_to_try = [
+                "gemini-3.8-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-2.5-pro"
+            ]
+            
+            for model in models_to_try:
+                try:
+                    response = client.models.generate_content(
+                        model=model,
+                        contents=prompt
+                    )
+                    if response and response.text:
+                        response_text = response.text
+                        break
+                except Exception as model_err:
+                    last_gemini_error = model_err
+                    continue
+        except Exception as client_err:
+            last_gemini_error = client_err
+            
+    # If all Gemini models failed or key was missing, fall back to Groq
+    if not response_text:
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            try:
+                groq_client = Groq(api_key=groq_key)
+                completion = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "You are an energy efficiency AI."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=150
+                )
+                response_text = completion.choices[0].message.content
+            except Exception as groq_err:
+                return f"**API Error:** All Gemini models and Groq fallback failed.\n\nGemini Error: {str(last_gemini_error)}\nGroq Error: {str(groq_err)}"
+        else:
+            return f"**API Error:** Gemini models failed and `GROQ_API_KEY` is not set.\n\nDetails: {str(last_gemini_error)}"
+            
+    return response_text
