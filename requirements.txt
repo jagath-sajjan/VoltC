@@ -1,0 +1,16 @@
+streamlit
+opencv-python-headless
+streamlit-webrtc
+ultralytics
+av
+torch
+torchvision
+numpy
+pandas
+matplotlib
+seaborn
+plotly
+scikit-learn
+google-genai
+groq
+python-dotenv
