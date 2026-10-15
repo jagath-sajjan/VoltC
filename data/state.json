@@ -1,0 +1,14 @@
+{
+  "room_101": {
+    "room_id": "room_101",
+    "room_name": "Lab 101",
+    "status": "WASTE",
+    "person_count": 0,
+    "lights_on": true,
+    "active_load_watts": 1572,
+    "waste_duration_seconds": 2.4,
+    "kwh_wasted": 0.00105,
+    "cost_inr_wasted": 0.0084,
+    "co2_kg_emitted": 0.00074
+  }
+}
