@@ -1,18 +1,41 @@
 import streamlit as st
 import cv2
 import pandas as pd
+import atexit
+import signal
+import threading
 from twin import create_floor_plan, load_data
 from detector import RoomDetector
 from rules import EnergyRulesEngine
 from report import generate_action_plan
+from sim import initialize_building_state
 
 st.set_page_config(page_title="Nachos Digital Twin", layout="wide")
+
+# --- SERVER LIFECYCLE: runs exactly once per server process ---
+@st.cache_resource
+def _register_server_lifecycle():
+    """Reset state on server start; register hooks to reset again on server stop."""
+    initialize_building_state()
+
+    def _on_server_stop():
+        initialize_building_state()
+
+    atexit.register(_on_server_stop)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, lambda s, f: _on_server_stop())
+        signal.signal(signal.SIGINT, lambda s, f: _on_server_stop())
+    return True
+
+_register_server_lifecycle()
+
+rooms_data, state_data = load_data()
 
 st.title("Digital Twin: Nachos HQ Monitor")
 st.markdown("Live energy waste detection and visualization platform.")
 
-rooms_data, state_data = load_data()
 floors = sorted(list(set(r["floor"] for r in rooms_data["rooms"])))
+
 
 # --- SIDEBAR ---
 st.sidebar.header("Building Navigation")

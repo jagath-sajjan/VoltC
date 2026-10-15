@@ -2,8 +2,8 @@
   "room_101": {
     "room_id": "room_101",
     "room_name": "Visitor Lobby & Reception",
-    "status": "OCCUPIED",
-    "person_count": 2,
+    "status": "INEFFICIENT",
+    "person_count": 1,
     "lights_on": true,
     "active_load_watts": 2150.0,
     "waste_duration_seconds": 0.64,
@@ -102,10 +102,10 @@
     "person_count": 1,
     "lights_on": true,
     "active_load_watts": 2200.0,
-    "waste_duration_seconds": 6.14,
-    "kwh_wasted": 0.00375,
-    "cost_inr_wasted": 0.0356,
-    "co2_kg_emitted": 0.00266
+    "waste_duration_seconds": 4.0,
+    "kwh_wasted": 0.00245,
+    "cost_inr_wasted": 0.0232,
+    "co2_kg_emitted": 0.00174
   },
   "room_402": {
     "room_id": "room_402",

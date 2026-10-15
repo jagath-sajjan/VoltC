@@ -17,7 +17,7 @@ def initialize_building_state():
             "status": "EFFICIENT",
             "person_count": 0,
             "lights_on": False,
-            "active_load_watts": engine.get_room_base_load(room["appliances"]),
+            "active_load_watts": engine.get_room_loads(room["appliances"])[0],
             "waste_duration_seconds": 0.0,
             "kwh_wasted": 0.0,
             "cost_inr_wasted": 0.0,
