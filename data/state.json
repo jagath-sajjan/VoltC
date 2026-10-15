@@ -10,5 +10,17 @@
     "kwh_wasted": 0.00105,
     "cost_inr_wasted": 0.0084,
     "co2_kg_emitted": 0.00074
+  },
+  "room_102": {
+    "room_id": "room_102",
+    "room_name": "Townhall Conference Room",
+    "status": "EFFICIENT",
+    "person_count": 0,
+    "lights_on": false,
+    "active_load_watts": 3700,
+    "waste_duration_seconds": 5.67,
+    "kwh_wasted": 0.00582,
+    "cost_inr_wasted": 0.0465,
+    "co2_kg_emitted": 0.00414
   }
 }

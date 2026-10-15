@@ -1,0 +1,96 @@
+{
+  "building": "EcoCorp Towers (Block A)",
+  "floors": [1, 2, 3, 4],
+  "rooms": [
+    {
+      "id": "room_101",
+      "name": "Visitor Lobby & Reception",
+      "floor": 1,
+      "type": "corporate",
+      "clip": "clips/sample1.mp4",
+      "appliances": ["hall_lighting_array", "desktop_computer", "ac_1_5_ton"],
+      "coordinates": {"x": [0, 4, 4, 0], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_102",
+      "name": "Townhall Conference Room",
+      "floor": 1,
+      "type": "corporate",
+      "clip": "clips/sampleER.mp4",
+      "appliances": ["hall_lighting_array", "projector", "ac_1_5_ton", "ac_1_5_ton"],
+      "coordinates": {"x": [4, 7, 7, 4], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_canteen",
+      "name": "Corporate Cafeteria",
+      "floor": 1,
+      "type": "annex",
+      "clip": "clips/sample1.mp4",
+      "appliances": ["hall_lighting_array", "fan", "fan", "ac_1_5_ton"],
+      "coordinates": {"x": [8, 12, 12, 8], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_hangout",
+      "name": "Outdoor Breakout Deck",
+      "floor": 1,
+      "type": "annex",
+      "clip": "clips/sampleER.mp4",
+      "appliances": ["tube_light", "fan"],
+      "coordinates": {"x": [8, 12, 12, 8], "y": [5, 5, 8, 8]}
+    },
+    {
+      "id": "room_201",
+      "name": "Open Engineering Bay A",
+      "floor": 2,
+      "type": "corporate",
+      "clip": "clips/sample1.mp4",
+      "appliances": ["hall_lighting_array", "desktop_computer", "desktop_computer", "ac_1_5_ton"],
+      "coordinates": {"x": [0, 4, 4, 0], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_202",
+      "name": "Sprint Scrum Room",
+      "floor": 2,
+      "type": "corporate",
+      "clip": "clips/sampleER.mp4",
+      "appliances": ["tube_light", "projector", "ac_1_5_ton"],
+      "coordinates": {"x": [4, 7, 7, 4], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_301",
+      "name": "Product & Operations Hub",
+      "floor": 3,
+      "type": "corporate",
+      "clip": "clips/sample1.mp4",
+      "appliances": ["hall_lighting_array", "desktop_computer", "ac_1_5_ton"],
+      "coordinates": {"x": [0, 4, 4, 0], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_302",
+      "name": "Data Center & Network NOC",
+      "floor": 3,
+      "type": "corporate",
+      "clip": "clips/sampleER.mp4",
+      "appliances": ["server_rack", "server_rack", "ac_1_5_ton", "tube_light"],
+      "coordinates": {"x": [4, 7, 7, 4], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_401",
+      "name": "Executive Boardroom",
+      "floor": 4,
+      "type": "corporate",
+      "clip": "clips/sampleER.mp4",
+      "appliances": ["hall_lighting_array", "projector", "ac_1_5_ton"],
+      "coordinates": {"x": [0, 4, 4, 0], "y": [0, 0, 4, 4]}
+    },
+    {
+      "id": "room_402",
+      "name": "Leadership Suites",
+      "floor": 4,
+      "type": "corporate",
+      "clip": "clips/sample1.mp4",
+      "appliances": ["tube_light", "desktop_computer", "fan", "ac_1_5_ton"],
+      "coordinates": {"x": [4, 7, 7, 4], "y": [0, 0, 4, 4]}
+    }
+  ]
+}

@@ -3,6 +3,8 @@ from pathlib import Path
 import cv2
 import torch
 from ultralytics import YOLO
+import json
+from rules import EnergyRulesEngine
 
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 
@@ -24,7 +26,7 @@ class RoomDetector:
             classes=[0],
             device=self.device,
             verbose=False,
-            conf=0.20,
+            conf=0.35,
             imgsz=1280,
             agnostic_nms=True
         )
@@ -72,13 +74,60 @@ class RoomDetector:
         if display:
             cv2.destroyAllWindows()
 
+def run_room_pipeline(room_id: str, rooms_file: str = "data/rooms.json", sample_step: int = 10):
+    with open(rooms_file, "r") as f:
+        rooms = {r["id"]: r for r in json.load(f)["rooms"]}
+
+    if room_id not in rooms:
+        raise ValueError(f"Room ID '{room_id}' not found in {rooms_file}")
+
+    room = rooms[room_id]
+    detector = RoomDetector(brightness_threshold=75.0)
+    engine = EnergyRulesEngine()
+
+    cap = cv2.VideoCapture(room["clip"])
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    interval_seconds = sample_step / fps
+
+    state_cache = {}
+    if Path("data/state.json").exists():
+        try:
+            with open("data/state.json", "r") as f:
+                state_cache = json.load(f)
+        except Exception:
+            state_cache = {}
+
+    frame_idx = 0
+    print(f"[*] Running live analysis for {room['name']} ({room['clip']})...")
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if frame_idx % sample_step == 0:
+            stats = detector.analyze_frame(frame)
+            room_state = engine.evaluate_room(
+                room_id=room["id"],
+                room_name=room["name"],
+                person_count=stats["person_count"],
+                lights_on=stats["lights_on"],
+                appliances_active=room["appliances"],
+                interval_seconds=interval_seconds,
+                grace_period_seconds=2.0
+            )
+            state_cache[room["id"]] = room_state
+            engine.save_state(state_cache)
+            print(f"[{room_state['room_name']}] Status: {room_state['status']} | Ppl: {room_state['person_count']} | Waste: {room_state['waste_duration_seconds']}s | ₹{room_state['cost_inr_wasted']}")
+
+        frame_idx += 1
+
+    cap.release()
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run occupancy & light detection on a video clip.")
-    parser.add_argument("--clip", type=str, default="clips/sample.mp4", help="Path to input video file")
-    parser.add_argument("--threshold", type=float, default=75.0, help="Brightness threshold for light on/off")
-    parser.add_argument("--view", action="store_true", help="Display visual cv2 window preview")
-
+    parser = argparse.ArgumentParser(description="Run occupancy & light detection.")
+    parser.add_argument("--room", type=str, default="room_102", help="Room ID from rooms.json to run")
+    parser.add_argument("--threshold", type=float, default=75.0, help="Brightness threshold")
+    parser.add_argument("--view", action="store_true", help="Display window")
     args = parser.parse_args()
-    detector = RoomDetector(brightness_threshold=args.threshold)
-    detector.process_clip(video_path=args.clip, display=args.view)
+    run_room_pipeline(room_id=args.room)

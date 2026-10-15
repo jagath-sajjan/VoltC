@@ -58,6 +58,8 @@ class EnergyRulesEngine:
             tracker["total_waste_seconds"] += interval_seconds
         elif person_count > 0:
             status = "OCCUPIED"
+        elif lights_on:
+            status = "MONITORING"
         else:
             status = "EFFICIENT"
 
