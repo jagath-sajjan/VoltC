@@ -3,7 +3,6 @@ from pathlib import Path
 import plotly.graph_objects as go
 
 def load_data():
-    """Loads static room data and dynamic state data."""
     with open("data/rooms.json", "r") as f:
         rooms_data = json.load(f)
     
@@ -15,33 +14,29 @@ def load_data():
     return rooms_data, state_data
 
 def create_floor_plan(floor_num: int):
-    """Draws a 2D Plotly map for a specific floor."""
     rooms_data, state_data = load_data()
     fig = go.Figure()
     
-    # Status to color mapping
     color_map = {
         "EFFICIENT": "lightgray",
         "OCCUPIED": "lightgreen",
+        "INEFFICIENT": "orange",
         "MONITORING": "khaki",
         "WASTE": "salmon",
         "UNKNOWN": "white"
     }
 
-    # Draw each room on the selected floor
     for room in rooms_data["rooms"]:
         if room["floor"] != floor_num:
             continue
             
         r_id = room["id"]
-        status = state_data.get(r_id, {}).get("status", "UNKNOWN")
+        status = state_data.get(r_id, {}).get("status", "EFFICIENT")
         fill_color = color_map.get(status, "white")
         
-        # Close the polygon by repeating the first coordinate at the end
         x_coords = room["coordinates"]["x"] + [room["coordinates"]["x"][0]]
         y_coords = room["coordinates"]["y"] + [room["coordinates"]["y"][0]]
         
-        # Calculate center for text placement
         center_x = sum(x_coords[:-1]) / 4
         center_y = sum(y_coords[:-1]) / 4
 
@@ -56,7 +51,6 @@ def create_floor_plan(floor_num: int):
             hoverinfo="skip"
         ))
 
-        # Add labels in the center of the room
         fig.add_annotation(
             x=center_x,
             y=center_y,
@@ -65,7 +59,6 @@ def create_floor_plan(floor_num: int):
             font=dict(size=12, color="black")
         )
 
-    # Clean up the axis so it looks like a blueprint
     fig.update_layout(
         title=f"Live Digital Twin: Floor {floor_num}",
         xaxis=dict(visible=False, range=[-1, 13]),
@@ -78,7 +71,6 @@ def create_floor_plan(floor_num: int):
     return fig
 
 if __name__ == "__main__":
-    # Test script to generate HTML file to verify drawing
     fig = create_floor_plan(1)
     fig.write_html("test_map.html")
     print("[*] Map exported to test_map.html")

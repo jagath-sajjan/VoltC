@@ -13,12 +13,21 @@ class EnergyRulesEngine:
         self.co2_factor = self.config["rates"]["emission_kg_co2_per_kwh"]
         self.appliances = self.config["appliances_watts"]
         
-        # In-memory tracking per room
+        self.infrastructure_appliances = ["server_rack"]
+        
         self.room_tracker = {}
 
-    def get_room_base_load(self, room_appliances: list[str]) -> float:
-        """Returns total wattage for a list of appliance names."""
-        return sum(self.appliances.get(app, 0) for app in room_appliances)
+    def get_room_loads(self, room_appliances: list[str]) -> tuple[float, float]:
+        total_watts = 0.0
+        switchable_watts = 0.0
+        
+        for app in room_appliances:
+            w = self.appliances.get(app, 0)
+            total_watts += w
+            if app not in self.infrastructure_appliances:
+                switchable_watts += w
+                
+        return total_watts, switchable_watts
 
     def evaluate_room(
         self,
@@ -30,11 +39,6 @@ class EnergyRulesEngine:
         interval_seconds: float,
         grace_period_seconds: float = 3.0
     ) -> dict:
-        """
-        Evaluates energy state for a single room observation interval.
-        - interval_seconds: time step between evaluation frames (e.g. 0.4s)
-        - grace_period_seconds: threshold before flagging waste
-        """
         if room_id not in self.room_tracker:
             self.room_tracker[room_id] = {
                 "consecutive_empty_lit_seconds": 0.0,
@@ -42,12 +46,12 @@ class EnergyRulesEngine:
             }
 
         tracker = self.room_tracker[room_id]
-        total_watts = self.get_room_base_load(appliances_active)
+        total_watts, switchable_watts = self.get_room_loads(appliances_active)
 
-        # Waste Condition: Lights are on, but nobody is inside
         is_empty_lit = lights_on and (person_count == 0)
+        is_low_load = switchable_watts < 200.0  # Forgive rooms with minimal lighting like the outdoor deck
 
-        if is_empty_lit:
+        if is_empty_lit and not is_low_load:
             tracker["consecutive_empty_lit_seconds"] += interval_seconds
         else:
             tracker["consecutive_empty_lit_seconds"] = 0.0
@@ -57,15 +61,18 @@ class EnergyRulesEngine:
             status = "WASTE"
             tracker["total_waste_seconds"] += interval_seconds
         elif person_count > 0:
-            status = "OCCUPIED"
-        elif lights_on:
+            if person_count == 1 and switchable_watts > 1000 and lights_on:
+                status = "INEFFICIENT"
+                tracker["total_waste_seconds"] += (interval_seconds * 0.8)
+            else:
+                status = "OCCUPIED"
+        elif lights_on and not is_low_load:
             status = "MONITORING"
         else:
             status = "EFFICIENT"
 
-        # Math: kWh, INR, CO2
         waste_hours = tracker["total_waste_seconds"] / 3600.0
-        kwh_wasted = (total_watts * waste_hours) / 1000.0
+        kwh_wasted = (switchable_watts * waste_hours) / 1000.0
         cost_inr = kwh_wasted * self.tariff
         co2_kg = kwh_wasted * self.co2_factor
 
@@ -83,32 +90,6 @@ class EnergyRulesEngine:
         }
 
     def save_state(self, rooms_state: dict, output_path: Path = STATE_PATH):
-        """Dumps latest digital twin room state to JSON."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w") as f:
             json.dump(rooms_state, f, indent=2)
-
-
-if __name__ == "__main__":
-    # Test stub verifying math logic
-    engine = EnergyRulesEngine()
-    
-    # Test a room with 2 tube lights and 1 AC
-    apps = ["tube_light", "tube_light", "ac_1_5_ton"]
-    
-    print("[*] Testing Rules Engine simulation:")
-    # Simulate 5 ticks of empty lit room (0.8s each = 4.0s total)
-    for tick in range(1, 6):
-        res = engine.evaluate_room(
-            room_id="room_101",
-            room_name="Lab 101",
-            person_count=0,
-            lights_on=True,
-            appliances_active=apps,
-            interval_seconds=0.8,
-            grace_period_seconds=2.0
-        )
-        print(f"Tick {tick}: Status={res['status']} | Waste={res['waste_duration_seconds']}s | ₹={res['cost_inr_wasted']}")
-
-    engine.save_state({"room_101": res})
-    print(f"[*] State exported cleanly to {STATE_PATH}")

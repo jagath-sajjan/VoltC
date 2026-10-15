@@ -4,7 +4,7 @@ import pandas as pd
 from twin import create_floor_plan, load_data
 from detector import RoomDetector
 from rules import EnergyRulesEngine
-from report import generate_action_plan  # <--- New import
+from report import generate_action_plan
 
 st.set_page_config(page_title="Nachos Digital Twin", layout="wide")
 
@@ -24,7 +24,7 @@ st.sidebar.subheader("Live Camera Feed")
 selected_room_name = st.sidebar.selectbox("Select Room Camera", list(floor_rooms.keys()))
 selected_room = floor_rooms[selected_room_name]
 
-start_feed = st.sidebar.checkbox("▶ Auto-Run Live Detection", value=True)
+start_feed = st.sidebar.checkbox("Auto-Run Live Detection", value=True)
 
 # --- MAIN DASHBOARD ---
 col1, col2 = st.columns([2, 1.2])
@@ -55,7 +55,8 @@ with col2:
         video_placeholder.info("Check 'Auto-Run Live Detection' in the sidebar to connect to camera.")
         
     if start_feed:
-        detector = RoomDetector(brightness_threshold=75.0)
+        room_threshold = selected_room.get("brightness_threshold", 75.0)
+        detector = RoomDetector(brightness_threshold=room_threshold)
         engine = EnergyRulesEngine()
         
         cap = cv2.VideoCapture(selected_room["clip"])
@@ -72,6 +73,7 @@ with col2:
                 
             if frame_idx % sample_step == 0:
                 stats = detector.analyze_frame(frame)
+                
                 room_state = engine.evaluate_room(
                     room_id=selected_room["id"],
                     room_name=selected_room["name"],
@@ -92,8 +94,8 @@ with col2:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 video_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
                 
-                alert_color = "red" if room_state["status"] == "WASTE" else "green"
-                metrics_placeholder.markdown(f"**Status:** :{alert_color}[{room_state['status']}] | **Waste Cost:** ₹{room_state['cost_inr_wasted']:.4f}")
+                alert_color = "red" if room_state["status"] in ["WASTE", "INEFFICIENT"] else "green"
+                metrics_placeholder.markdown(f"**Status:** :{alert_color}[{room_state['status']}] | **Waste Cost:** Rs {room_state['cost_inr_wasted']:.4f}")
                 
             frame_idx += 1
             
@@ -107,7 +109,7 @@ with col2:
 
 # --- NEW: ANALYTICS & AI REPORTING ---
 st.markdown("---")
-st.header("📈 Analytics & AI Insights")
+st.header("Analytics & AI Insights")
 
 col3, col4 = st.columns([1, 1])
 
@@ -118,17 +120,16 @@ with col3:
     daily_waste_hours = st.slider("Estimated daily waste per room (hours)", 1, 10, 4)
     active_rooms = len(state_data) if state_data else 1
     
-    # Projection math: Rooms * avg 2kW load * hours * 22 working days
     monthly_kwh = active_rooms * 2.0 * daily_waste_hours * 22 
-    monthly_inr = monthly_kwh * 7.98 # BESCOM LT-1 effective rate
+    monthly_inr = monthly_kwh * 9.50 
     monthly_co2 = monthly_kwh * 0.71
     
-    st.success(f"**Projected Monthly Savings:** ₹{monthly_inr:,.2f}")
-    st.warning(f"**Carbon Footprint Reduction:** {monthly_co2:,.1f} kg CO₂")
+    st.success(f"**Projected Monthly Savings:** Rs {monthly_inr:,.2f}")
+    st.warning(f"**Carbon Footprint Reduction:** {monthly_co2:,.1f} kg CO2")
 
 with col4:
     st.subheader("GenAI Action Plan")
-    if st.button("✨ Generate Facility Report"):
+    if st.button("Generate Facility Report"):
         with st.spinner("Querying Gemini..."):
             report_text = generate_action_plan(state_data)
             st.markdown(report_text)

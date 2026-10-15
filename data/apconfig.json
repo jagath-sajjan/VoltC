@@ -1,12 +1,11 @@
 {
   "rates": {
-    "tariff_inr_per_kwh": 7.98,
+    "tariff_inr_per_kwh": 9.50,
     "emission_kg_co2_per_kwh": 0.71,
     "bescom_breakdown_notes": {
-      "base_charge": 5.80,
-      "true_up_charge": 0.56,
-      "pg_surcharge": 0.35,
-      "effective_average": 7.98
+      "base_charge": 8.50,
+      "commercial_surcharges_and_tax": 1.00,
+      "effective_average": 9.50
     }
   },
   "appliances_watts": {
