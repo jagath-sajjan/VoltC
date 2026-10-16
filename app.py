@@ -73,6 +73,7 @@ with st.sidebar:
     st.markdown('<div class="volt-section-header">Navigation</div>', unsafe_allow_html=True)
     st.page_link("app.py",                   label="Overview")
     st.page_link("pages/Webcam_Feed.py",      label="Live Webcam")
+    st.page_link("pages/Live_CCTV_Demos.py",  label="Live CCTV Demos")
 
     st.markdown('<div class="volt-section-header">Floor</div>', unsafe_allow_html=True)
     selected_floor = st.selectbox("Floor Level", floors, label_visibility="collapsed")

@@ -39,6 +39,7 @@ with st.sidebar:
     st.markdown('<div class="volt-section-header">Navigation</div>', unsafe_allow_html=True)
     st.page_link("app.py",              label="Overview")
     st.page_link("pages/Webcam_Feed.py", label="Live Webcam")
+    st.page_link("pages/Live_CCTV_Demos.py", label="Live CCTV Demos")
 
     all_rooms  = rooms_data["rooms"]
     room_names = [r["name"] for r in all_rooms]

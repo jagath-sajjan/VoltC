@@ -15,7 +15,11 @@ html, body, [class*="css"] {
 }
 
 /* ── GLOBAL RESETS ──────────────────────────────────────────────────── */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer, header, [data-testid="stHeader"], [data-testid="stSidebarHeader"], [data-testid="stSidebarCollapseButton"], [data-testid="collapsedControl"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0px !important;
+}
 
 /* Remove Streamlit's default top padding */
 .block-container {
@@ -31,8 +35,26 @@ section[data-testid="stSidebar"] {
     padding-top: 1.5rem !important;
 }
 
-section[data-testid="stSidebar"] * {
+section[data-testid="stSidebar"] *:not(.material-symbols-rounded):not([data-testid="stIconMaterial"]) {
     font-family: 'Inter', sans-serif !important;
+}
+
+.material-symbols-rounded, [data-testid="stIconMaterial"] {
+    font-family: 'Material Symbols Rounded' !important;
+}
+
+[data-testid="stSidebarCollapseButton"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarHeader"],
+header[data-testid="stHeader"],
+button[data-testid="baseButton-headerNoPadding"],
+button[aria-label*="sidebar" i],
+button[aria-label*="Sidebar" i] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0px !important;
+    height: 0px !important;
+    overflow: hidden !important;
 }
 
 section[data-testid="stSidebar"] .stSelectbox label,
