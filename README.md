@@ -2,9 +2,9 @@
 
 Digital twin platform for energy waste monitoring in commercial facilities. VoltC uses computer vision and automated rules to detect room occupancy, monitor power draw, calculate wasted electricity costs, and create actionable facility plans.
 
-<video src="demo.mp4" controls="controls" width="100%"></video>
+[![VoltC Demo Video](ATM/demo.gif)](https://drive.google.com/file/d/1_hQKoIjVxKS_25oKfiEoUnDdscSsUPD0/view?usp=sharing)
 
-[Watch live video](https://drive.google.com/file/d/1_hQKoIjVxKS_25oKfiEoUnDdscSsUPD0/view?usp=sharing)
+▶️ **[Watch live video](https://drive.google.com/file/d/1_hQKoIjVxKS_25oKfiEoUnDdscSsUPD0/view?usp=sharing)**
 
 ![Metrics Analysis](ATM/metrics_analysis.png)
 
