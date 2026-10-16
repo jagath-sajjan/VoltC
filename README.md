@@ -4,6 +4,8 @@ Digital twin platform for energy waste monitoring in commercial facilities. Volt
 
 <video src="demo.mp4" controls="controls" width="100%"></video>
 
+[Watch live video](https://drive.google.com/file/d/1_hQKoIjVxKS_25oKfiEoUnDdscSsUPD0/view?usp=sharing)
+
 ![Metrics Analysis](ATM/metrics_analysis.png)
 
 ## Core Capabilities
