@@ -1,5 +1,7 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import threading
+import json as _json
 import pandas as pd
 import sys
 import os
@@ -19,7 +21,7 @@ st.set_page_config(page_title="Live Webcam Feed", layout="wide")
 
 rooms_data, state_data = load_data()
 
-# --- SIDEBAR ---
+# --- SIDEBAR: Room selector ---
 st.sidebar.header("Webcam Settings")
 all_rooms  = rooms_data["rooms"]
 room_names = [r["name"] for r in all_rooms]
@@ -27,26 +29,31 @@ selected_room_name = st.sidebar.selectbox("Assign Feed to Room", room_names)
 selected_room      = next(r for r in all_rooms if r["name"] == selected_room_name)
 
 st.title("Live Webcam Feed")
-st.markdown(f"Room assignment: **{selected_room_name}**  —  click **START** below, then allow camera in the browser prompt.")
+st.markdown(
+    f"Room assignment: **{selected_room_name}**  —  "
+    "click **START** below, then allow camera in the browser prompt."
+)
 st.markdown("---")
 
 
-# --- VIDEO PROCESSOR (runs in WebRTC thread, not Streamlit thread) ---
+# ---------------------------------------------------------------------------
+# VIDEO PROCESSOR  (runs in WebRTC thread, not Streamlit thread)
+# ---------------------------------------------------------------------------
 class RoomVideoProcessor(VideoProcessorBase):
     def __init__(self):
-        self._detector    = RoomDetector(
+        self._detector = RoomDetector(
             brightness_threshold=selected_room.get("brightness_threshold", 75.0)
         )
-        self._engine      = EnergyRulesEngine()
-        self._room        = selected_room
-        self._lock        = threading.Lock()
-        self.last_stats   = {}
-        self.last_state   = {}
+        self._engine   = EnergyRulesEngine()
+        self._room     = selected_room
+        self._lock     = threading.Lock()
+        self.last_stats  = {}
+        self.last_state  = {}
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         img = frame.to_ndarray(format="bgr24")
 
-        stats      = self._detector.analyze_frame(img)
+        stats = self._detector.analyze_frame(img)
         room_state = self._engine.evaluate_room(
             room_id              = self._room["id"],
             room_name            = self._room["name"],
@@ -65,17 +72,97 @@ class RoomVideoProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
-# --- LAYOUT ---
+# ---------------------------------------------------------------------------
+# CAMERA DEVICE ENUMERATION via JS → query params
+# ---------------------------------------------------------------------------
+# The browser exposes real camera labels only after getUserMedia permission.
+# We inject a tiny JS snippet that:
+#   1. Triggers the permission prompt
+#   2. Enumerates videoinput devices
+#   3. Writes labels+ids into the page URL as query params
+# On the next Streamlit rerun those params are read and stored in session_state.
+# ---------------------------------------------------------------------------
+
+CAM_ENUM_JS = """
+<script>
+(async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: false});
+        stream.getTracks().forEach(t => t.stop());          // release immediately
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const vDevs   = devices.filter(d => d.kind === 'videoinput');
+
+        const labels  = vDevs.map((d, i) => d.label || 'Camera ' + i);
+        const ids     = vDevs.map(d => d.deviceId);
+
+        // Persist in query string so Streamlit picks them up on rerun
+        const params = new URLSearchParams(window.parent.location.search);
+        const prev   = params.get('cam_labels');
+        if (prev !== JSON.stringify(labels)) {
+            params.set('cam_labels', JSON.stringify(labels));
+            params.set('cam_ids',    JSON.stringify(ids));
+            window.parent.history.replaceState({}, '', '?' + params.toString());
+            // Trigger a Streamlit rerun so the sidebar dropdown refreshes
+            window.parent.dispatchEvent(new Event('popstate'));
+        }
+    } catch (e) {
+        console.warn('Camera enumeration failed:', e);
+    }
+})();
+</script>
+"""
+
+# Render JS (height=0 keeps it invisible)
+components.html(CAM_ENUM_JS, height=0)
+
+# Read camera info from query params
+qp = st.query_params
+cam_labels_raw = qp.get("cam_labels")
+cam_ids_raw    = qp.get("cam_ids")
+
+if cam_labels_raw:
+    try:
+        parsed_labels = _json.loads(cam_labels_raw)
+        parsed_ids    = _json.loads(cam_ids_raw) if cam_ids_raw else []
+        if parsed_labels:
+            st.session_state["cam_labels"] = parsed_labels
+            st.session_state["cam_ids"]    = parsed_ids
+    except Exception:
+        pass
+
+# Fall back to a sane default on first load before JS runs
+cam_labels = st.session_state.get("cam_labels", ["Default Camera"])
+cam_ids    = st.session_state.get("cam_ids",    [""])
+
+# Sidebar dropdown populated with real device names
+selected_cam_label = st.sidebar.selectbox("Camera Device", cam_labels)
+selected_cam_idx   = cam_labels.index(selected_cam_label)
+selected_cam_id    = cam_ids[selected_cam_idx] if selected_cam_idx < len(cam_ids) else ""
+
+# Pin to a specific deviceId when available; otherwise let the browser decide
+video_constraints = (
+    {"deviceId": {"exact": selected_cam_id}}
+    if selected_cam_id else True
+)
+
+# Dynamic key: any change in room or camera tears down the old WebRTC peer
+# and starts a fresh one — this is what makes device switching actually work.
+streamer_key = f"webcam-{selected_room_name}-{selected_cam_idx}"
+
+# ---------------------------------------------------------------------------
+# LAYOUT
+# ---------------------------------------------------------------------------
 feed_col, data_col = st.columns([2, 1])
 
 with feed_col:
     ctx = webrtc_streamer(
-        key="live-webcam",
+        key=streamer_key,
         video_processor_factory=RoomVideoProcessor,
         rtc_configuration=RTCConfiguration(
             {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
         ),
-        media_stream_constraints={"video": True, "audio": False},
+        media_stream_constraints={"video": video_constraints, "audio": False},
         async_processing=True,
     )
 
@@ -90,7 +177,9 @@ with data_col:
     tbl = st.empty()
 
 
-# --- METRIC REFRESH (polls processor state each rerun) ---
+# ---------------------------------------------------------------------------
+# METRIC REFRESH  (polls processor state each rerun)
+# ---------------------------------------------------------------------------
 if ctx.video_processor:
     with ctx.video_processor._lock:
         stats      = dict(ctx.video_processor.last_stats)
@@ -100,8 +189,10 @@ if ctx.video_processor:
         m_people.metric("People Detected", stats.get("person_count", 0))
         m_light.metric("Lights",           "ON" if stats.get("lights_on") else "OFF")
         alert = "red" if room_state.get("status") in ["WASTE", "INEFFICIENT"] else "green"
-        m_status.markdown(f"**Status** &nbsp; :{alert}[**{room_state.get('status', '—')}**]")
-        m_cost.metric("Waste Cost",        f"Rs {room_state.get('cost_inr_wasted', 0):.4f}")
+        m_status.markdown(
+            f"**Status** &nbsp; :{alert}[**{room_state.get('status', '—')}**]"
+        )
+        m_cost.metric("Waste Cost", f"Rs {room_state.get('cost_inr_wasted', 0):.4f}")
 
         state_data[selected_room["id"]] = room_state
         ctx.video_processor._engine.save_state(state_data)
